@@ -14,23 +14,13 @@ int main(void)
 	fclose(input_image);
 
 	unsigned char interpolated[512][512];
-	memset(interpolated, 0, sizeof(unsigned char) * 512 * 512);
 
 	for (int i = 0; i < 128; i++)
 		for (int j = 0; j < 128; j++)
 			interpolated[j * 4][i * 4] = input[j][i];
 
 	////////// Step 2. Input image에 3th lagrange interpolation //////////
-	//for (int i = 0; i < 512; i++) {
-	//	for (int j = 0; j < 512; j = j + 4) {
-	//		interpolated[i][j]
-	//			for (int k = j; k < j + 4; k++) {
-	//				interpolated[i][k] = interpolated[i][k]
-	//			}
-	//	}
-	//}
-
-	for (int k = 0; k < 512; k+=4) {
+	for (int k = 0; k < 512; k += 4) {
 		for (int i = 0; i < 4; i++) {
 			interpolated[k][i] = ((interpolated[k][0] * ((i - (0 + 4))*(i - (0 + 8))*(i - (0 + 12)))) / ((-4)*(-8)*(-12)))
 				+ ((interpolated[k][0 + 4] * ((i - (0 + 0))*(i - (0 + 8))*(i - (0 + 12)))) / ((4)*(-4)*(-8)))
@@ -40,19 +30,12 @@ int main(void)
 
 		for (int j = 0; j < 512 - 8; j += 4) {
 			for (int i = j + 5; i < j + 8; i++) {
-				interpolated[k][i] = ((interpolated[k][j] * ((i - (j + 4))*(i - (j + 8))*(i - (j + 12))))/ ((-4)*(-8)*(-12)))
+				interpolated[k][i] = ((interpolated[k][j] * ((i - (j + 4))*(i - (j + 8))*(i - (j + 12)))) / ((-4)*(-8)*(-12)))
 					+ ((interpolated[k][j + 4] * ((i - (j + 0))*(i - (j + 8))*(i - (j + 12)))) / ((4)*(-4)*(-8)))
 					+ ((interpolated[k][j + 8] * ((i - (j + 0))*(i - (j + 4))*(i - (j + 12)))) / ((8)*(4)*(-4)))
 					+ ((interpolated[k][j + 12] * ((i - (j + 0))*(i - (j + 4))*(i - (j + 8)))) / ((12)*(8)*(4)));
 			}
 		}
-
-		//for (int i = 0; i < 512; i++) // 보간되지 않은 외각 채우기
-		//	for (int j = 1; j < 4; j++)
-		//	{
-		//		interpolated[i][512 - j] = 2 * interpolated[i][512 - 4] - interpolated[i][512 - 2 * 4 + j];
-		//		interpolated[512 - j][i] = 2 * interpolated[512 - 4][i] - interpolated[512 - 2 * 4 + j][i];
-		//	}
 
 		int j = 496;
 		for (int i = 509; i < 512; i++) {
@@ -88,18 +71,10 @@ int main(void)
 				interpolated[i][512 - j] = 2 * interpolated[i][512 - 4] - interpolated[i][512 - 2 * 4 + j];
 				interpolated[512 - j][i] = 2 * interpolated[512 - 4][i] - interpolated[512 - 2 * 4 + j][i];
 			}
-
-		/*j = 496;
-		for (int i = j + 13; i < j + 16; i++) {
-			interpolated[i][k] = ((interpolated[j][k] * ((i - (j + 4))*(i - (j + 8))*(i - (j + 12)))) / ((-4)*(-8)*(-12)))
-				+ ((interpolated[j + 4][k] * ((i - (j + 0))*(i - (j + 8))*(i - (j + 12)))) / ((4)*(-4)*(-8)))
-				+ ((interpolated[j + 8][k] * ((i - (j + 0))*(i - (j + 4))*(i - (j + 12)))) / ((8)*(4)*(-4)))
-				+ ((interpolated[j + 12][k] * ((i - (j + 0))*(i - (j + 4))*(i - (j + 8)))) / ((12)*(8)*(4)));
-		}*/
 	}
 
 	////////// Step 3. 보간된 512x512 image를 .raw 포맷 파일로 저장 //////////
-	FILE* output_image = fopen("./output/la_lena(512x512).raw", "wb");
+	FILE* output_image = fopen("./output/lagr_lena(512x512).raw", "wb");
 	fwrite(interpolated, sizeof(unsigned char), 512 * 512, output_image);
 	fclose(output_image);
 
@@ -126,27 +101,8 @@ int main(void)
 	}
 	mse = sum / N;
 	psnr = 20 * log10(255 / sqrt(mse));
-	printf("해당 영상의 RMS는 %f입니다.\n", sqrt(mse));
-	printf("해당 영상의 PSNR은 %f입니다.\n", psnr);
-
-
-
-	//interpolated[0][1] = interpolated[0][0] * ((1 - 4)*(1 - 8)*(1 - 12) / (-4)*(-8)*(-12))
-	//	+ interpolated[0][4] * ((1 - 0)*(1 - 8)*(1 - 12) / (4)*(-4)*(-8))
-	//	+ interpolated[0][8] * ((1 - 0)*(1 - 4)*(1 - 12) / (8)*(4)*(-4))
-	//	+ interpolated[0][12] * ((1 - 0)*(1 - 4)*(1 - 8) / (12)*(8)*(4));
-
-	//interpolated[0][2] = interpolated[0][0] * ((2 - 4)*(2 - 8)*(2 - 12) / (-4)*(-8)*(-12))
-	//	+ interpolated[0][4] * ((2 - 0)*(2 - 8)*(2 - 12) / (4)*(-4)*(-8))
-	//	+ interpolated[0][8] * ((2 - 0)*(2 - 4)*(2 - 12) / (8)*(4)*(-4))
-	//	+ interpolated[0][12] * ((2 - 0)*(2 - 4)*(2 - 8) / (12)*(8)*(4));
-	
-	printf("%d\n", interpolated[0][1]);
-	printf("%d\n", interpolated[0][2]);
-	printf("%d\n", interpolated[0][3]);
-
-
-
+	printf("RMS는 %f입니다.\n", sqrt(mse));
+	printf("PSNR은 %f입니다.\n", psnr);
 
 	return 0;
 
