@@ -149,8 +149,8 @@ int main(void)
 	}
 	mse = sum / N;
 	psnr = 20 * log10(255 / sqrt(mse));
-	printf("해당 영상의 RMS는 %f입니다.\n", sqrt(mse));
-	printf("해당 영상의 PSNR은 %f입니다.\n", psnr);
+	printf("RMS는 %f입니다.\n", sqrt(mse));
+	printf("PSNR은 %f입니다.\n", psnr);
 	return 0;
 
 } // end of main
