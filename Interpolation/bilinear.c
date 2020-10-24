@@ -13,32 +13,11 @@ int main(void)
 	fread(input, sizeof(unsigned char), 128 * 128, input_image);
 	fclose(input_image);
 
-	//for (int i = 0; i < 512; i++) {
-	//	for (int j = 0; j < 512; j++) {
-	//		printf("%d ", original[i][j]);
-	//	}
-	//	printf("다음 줄\n");
-	//}
-
 	unsigned char interpolated[512][512];
-	memset(interpolated, 0, sizeof(unsigned char) * 512 * 512);
 
-	for (int i = 0; i < 128; i++) 
+	for (int i = 0; i < 128; i++)
 		for (int j = 0; j < 128; j++)
-			interpolated[j*4][i*4] = input[j][i];
-	
-	//for (int i = 0; i < 32; i++) {
-	//	for (int j = 0; j < 32; j++)
-	//		printf("%3d ", input[i][j]);
-	//	printf("\n");
-	//}
-	//printf("\n");
-
-	//for (int i = 0; i < 32; i++) {
-	//	for (int j = 0; j < 32; j++)
-	//		printf("%3d ", interpolated[i][j]);
-	//	printf("\n");
-	//}
+			interpolated[j * 4][i * 4] = input[j][i];
 
 	////////// Step 2. Input image에 bilinear interpolation //////////
 	for (int j = 0; j < 512; j++) {
@@ -76,13 +55,6 @@ int main(void)
 			interpolated[512 - j][i] = 2 * interpolated[512 - 4][i] - interpolated[512 - 2 * 4 + j][i];
 		}
 
-	//for (int i = 0; i < 512; i++) {
-	//	for (int j = 0; j < 512; j++) {
-	//		printf("%d ", interpolated[i][j]);
-	//	}
-	//	printf("다음 줄\n");
-	//}
-
 	////////// Step 3. 보간된 512x512 image를 .raw 포맷 파일로 저장 //////////
 	FILE* output_image = fopen("./output/bi_lena(512x512).raw", "wb");
 	fwrite(interpolated, sizeof(unsigned char), 512 * 512, output_image);
@@ -111,8 +83,8 @@ int main(void)
 	}
 	mse = sum / N;
 	psnr = 20 * log10(255 / sqrt(mse));
-	printf("해당 영상의 RMS는 %f입니다.\n", sqrt(mse));
-	printf("해당 영상의 PSNR은 %f입니다.\n", psnr);
+	printf("RMS는 %f입니다.\n", sqrt(mse));
+	printf("PSNR은 %f입니다.\n", psnr);
 
 	return 0;
 
