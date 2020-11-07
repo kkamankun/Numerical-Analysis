@@ -18,7 +18,7 @@ int main(void)
 
 	for (int i = 0; i < 128; i++)
 		for (int j = 0; j < 128; j++)
-			interpolated[j * 4][i * 4] = input[j][i];
+			interpolated[i * 4][j * 4] = input[i][j];
 
 	////////// Step 2. Input image에 6-tap interpolation //////////
 	for (int k = 0; k < 512 - 20; k += 4) {
