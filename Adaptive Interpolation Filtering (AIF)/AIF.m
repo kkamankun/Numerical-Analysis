@@ -62,74 +62,43 @@ for i =1:1:25
     wc_v(1:4,1+4*(i-1):4+4*(i-1)) =  wc_v(1:4,1+4*(i-1):4+4*(i-1))/cnt;
 end
 
-% 8x8 적응형 보간 필터 적용
-reconst = up;
+% 적응형 보간 필터 적용
+aif = up;
 for i = 1:8:512 % 행
     for j = 1:8:512 % 열
         c = classOfBlocks(64*((i+7)/8 - 1)+(j+7)/8);
         for k = 1:2:8 % 수평 방향
-            reconst(i+(k-1),[j+1 j+3 j+5 j+7]) = reconst(i+(k-1),[j j+2 j+4 j+6])*wc_h(1:4,1+4*c:4+4*c);
+            aif(i+(k-1),[j+1 j+3 j+5 j+7]) = aif(i+(k-1),[j j+2 j+4 j+6])*wc_h(1:4,1+4*c:4+4*c);
         end
         for l = 1:1:8 % 수직 방향
-            temp = reconst([i i+2 i+4 i+6], j+(l-1)).'*wc_v(1:4,1+4*c:4+4*c);
-            reconst([i+1 i+3 i+5 i+7], j+(l-1)) = temp.';
-        end 
+            temp = aif([i i+2 i+4 i+6], j+(l-1)).'*wc_v(1:4,1+4*c:4+4*c);
+            aif([i+1 i+3 i+5 i+7], j+(l-1)) = temp.';
+        end
     end
 end
 
-fout=fopen('./test_lena(512x512).raw', 'wb'); % 6-tap 필터로 보간된 영상 저장
-fwrite(fout, reconst);
+fout = fopen('./AIF_lena(512x512).raw', 'wb'); % AIF 필터로 보간된 영상 저장
+fwrite(fout, aif);
 fclose(fout);
 
-% 8x8 6-tap 필터 적용
-recon=zeros(512, 512);
-for i = 1:1:256
-    for j = 1:1:256
-        recon(i*2,j*2) = down(i,j); % integer-pel
+% 6-tap 필터 적용
+tap = up;
+padded = padarray(tap,[4,4],'replicate');
+sinc = [11 -43 160 160 -43 11];
+for i = 1:8:512 % 행
+    for j = 1:8:512 % 열
+        for k = 1:2:8 % 수평방향(half-pel)
+            padded(k+i+3, j+5) = round((padded(i+k+3, [j j+2 j+4 j+6 j+8 j+10])*sinc.')/256);
+        end
+        for l = 1:1:8 % 수직방향(half-pel)
+            padded(i+5, j+l+3) = round((padded([i i+2 i+4 i+6 i+8 i+10], j+l+3).'*sinc.')/256);
+        end
     end
 end
-
-for k = 2:2:502
-    for j = 2:2:502
-        for i = 0:2:10 % 수평방향(half-pel)
-            recon(k+i,j+5) = ((11 * recon(k + i,j)) - (43 * recon(k + i,j + 2)) + (160 * recon(k + i,j + 4))	+ (160 * recon(k + i,j + 6)) - (43 * recon(k + i,j + 8)) + (11 * recon(k + i,j + 10))) / 256;
-        end
-        for i = 0:2:10 % 수직방향(half-pel)
-            recon(k+ 5,j + i) = ((11 * recon(k,j + i)) - (43 * recon(k + 2,j + i)) + (160 * recon(k + 4,j + i)) + (160 * recon(k + 6,j + i)) - (43 * recon(k + 8,j + i)) + (11 * recon(k + 10,j + i))) / 256;
-        end
-        recon(k + 5,j + 5) = ((11 * recon(k + 5,j)) - (43 * recon(k + 5,j + 2)) + (160 * recon(k + 5,j + 4)) + (160 * recon(k + 5,j + 6)) - (43 * recon(k + 5,j + 8)) + (11 * recon(k + 5,j + 10))) / 256; % j
-    end
-end
-
-% 보간되지 않은 외곽 영역 채우기 (zero padding)
-for i = 2:2:512
-    recon(1,i) = ((160 * recon(2,i)) - (43 * recon(4,i)) + (11 * recon(6,i))) / 256;
-    recon(3,i) = ((160 * recon(2,i)) + (160 * recon(4,i)) - (43 * recon(6,i)) + (11 * recon(8,i))) / 256;
-    recon(5,i) = ((-(43 * recon(2,i))) + (160 * recon(4,i)) + (160 * recon(6,i)) - (43 * recon(8,i)) + (11 * recon(10,i))) / 256;
-    recon(509,i) = (-(43 * recon(512,i)) + (160 * recon(510,i)) + (160 * recon(508,i)) - (43 * recon(506,i)) + (11 * recon(504,i))) / 256;
-    recon(511,i) = ((160 * recon(512,i)) + (160 * recon(510,i)) - (43 * recon(508,i)) + (11 * recon(506,i))) / 256;
-    recon(i,1) = ((160 * recon(i,2)) - (43 * recon(i,4)) + (11 * recon(i,6))) / 256;
-    recon(i,3) = ((160 * recon(i,2)) + (160 * recon(i,4)) - (43 * recon(i,6)) + (11 * recon(i,8))) / 256;
-    recon(i,5) = ((-(43 * recon(i,2))) + (160 * recon(i,4)) + (160 * recon(i,6)) - (43 * recon(i,8)) + (11 * recon(i,10))) / 256;
-    recon(i,509) = (-(43 * recon(i,512)) + (160 * recon(i,510)) + (160 * recon(i,508)) - (43 * recon(i,506)) + (11 * recon(i,504))) / 256;
-    recon(i,511) = ((160 * recon(i,512)) + (160 * recon(i,510)) - (43 * recon(i,508)) + (11 * recon(i,506))) / 256;
-end
-for i = 3:2:512
-    recon(1,i) = (recon(1,i - 1) + recon(1,i + 1)) / 2;
-    recon(3,i) = (recon(3,i - 1) + recon(3,i + 1)) / 2;
-    recon(5,i) = (recon(5,i - 1) + recon(5,i + 1)) / 2;
-    recon(509,i) = (recon(509,i - 1) + recon(509,i + 1)) / 2;
-    recon(511,i) = (recon(511,i - 1) + recon(511,i + 1)) / 2;
-    recon(i,1) = (recon(i - 1,1) + recon(i + 1,1)) / 2;
-    recon(i,3) = (recon(i - 1,3) + recon(i + 1,3)) / 2;
-    recon(i,5) = (recon(i - 1,5) + recon(i + 1,5)) / 2;
-    recon(i,509) = (recon(i - 1,509) + recon(i + 1,509)) / 2;
-    recon(i,511) = (recon(i - 1,511) + recon(i + 1,511)) / 2;
-end
-recon(1,1)=recon(1,2);
+tap = padded(5:516,5:516);
 
 fout=fopen('./6-tap_lena(512x512).raw', 'wb'); % 6-tap 필터로 보간된 영상 저장
-fwrite(fout, recon);
+fwrite(fout, tap);
 fclose(fout);
 
 % PSNR
@@ -137,11 +106,11 @@ N = 512*512;
 sum = 0;
 for i = 1:1:512
     for j = 1:1:512
-        error = ori(i,j)-recon(i,j);
+        error = ori(i,j)-tap(i,j);
         sum = sum + error*error;
     end
 end
 mse = sum/N;
 psnr = 20*log10(255/sqrt(mse));
 
-
+psnr
