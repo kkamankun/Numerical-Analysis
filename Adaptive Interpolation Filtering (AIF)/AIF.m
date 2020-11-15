@@ -20,7 +20,7 @@ for i = 1:4:256 % 행
         d135 = abs(sum(block(1:3,1:3).*D135, 'all')) + abs(sum(block(2:4,1:3).*D135, 'all')) + abs(sum(block(1:3,2:4).*D135, 'all')) + abs(sum(block(2:4,2:4).*D135, 'all'));
         d45 = abs(sum(block(1:3,1:3).*D45, 'all')) + abs(sum(block(2:4,1:3).*D45, 'all')) + abs(sum(block(1:3,2:4).*D45, 'all')) + abs(sum(block(2:4,2:4).*D45, 'all'));
         
-        [M, I] = max([10 h v d135 d45]); % 방향성 결정
+        [M, I] = max([0 h v d135 d45]); % 방향성 결정
         dirOfBlock(64*((i+3)/4 - 1)+(j+3)/4) = I - 1;
         
         act(64*((i+3)/4 - 1)+(j+3)/4) = h + v + d135 + d45; % 각 블럭의 활동성 저장
@@ -34,7 +34,7 @@ ori=fread(fin2, [512 512]);
 fclose(fin2);
 up = imresize(down, 2, 'box');
 
-% 적응형 보간 필터
+% 적응형 보간 필터 최적화
 wc_h = zeros(4,100); % 각 클래스별 optimized horizontal filter
 wc_v = zeros(4,100); % 각 클래스별 optimized vertical filter
 for i = 1:8:512 % 행
@@ -99,14 +99,39 @@ fout=fopen('./6-tap_lena(512x512).raw', 'wb'); % 6-tap 필터로 보간된 영�
 fwrite(fout, tap);
 fclose(fout);
 
+% Squared Error가 낮은 필터를 결정해서 보간
+sumAIF = 0;
+sumTap = 0;
+for i = 1:8:512 % 행
+    for j = 1:8:512 % 열
+        for k = 1:2:8
+            errorAIF = ori(i+k,j+k) - aif(i+k,j+k);
+            sumAIF = sumAIF + errorAIF*errorAIF;
+            errorTap = ori(i+k,j+k) - tap(i+k,j+k);
+            sumTap = sumTap + errorTap*errorTap;
+            if sumAIF < sumTap
+                recon(i:i+7,j:j+7) = tap(i:i+7,j:j+7);
+            else
+                recon(i:i+7,j:j+7) = aif(i:i+7,j:j+7);
+            end
+        end
+    end
+end
+        
+fout=fopen('./recon_lena(512x512).raw', 'wb'); % 6-tap 필터로 보간된 영상 저장
+fwrite(fout, recon);
+fclose(fout);        
+        
 % PSNR
 N = 512*512;
 sum = 0;
 for i = 1:1:512
     for j = 1:1:512
-        error = ori(i,j)-tap(i,j);
+        error = ori(i,j)-recon(i,j);
         sum = sum + error*error;
     end
 end
 mse = sum/N;
 psnr = 20*log10(255/sqrt(mse));
+
+psnr
