@@ -1,3 +1,4 @@
+% paddarray() 함수 사용을 위해서 Image Processing Toolbox를 설치
 clearvars; % 작업 공간 지우기
 
 fin=fopen('./lena(256x256)_3.raw','r'); % downsampled 영상(256x256) 읽기
